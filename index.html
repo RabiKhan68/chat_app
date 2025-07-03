@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Chat</title>
+</head>
+<body>
+    <h2>Room Chat</h2>
+    <input id = "msgInput" placeholder="Enter message..">
+    <button onclick="sendMessage()">Send</button>
+    <ul id = "chatBox"></ul>
+
+    <script src = "https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const socket = io("http://localhost:3001");
+
+        const msgInput = document.getElementById("msgInput");
+        const chatBox = document.getElementById("chatBox");
+
+        function sendMessage() {
+            const message = msgInput.value;
+            socket.emit("send_message", {text: message});
+            msgInput.value = "";
+        }
+
+        socket.on("receive_message", (data) => {
+            const li = document.createElement("li");
+            li.textContent = data.text;
+            chatBox.appendChild(li);
+        });
+    </script>
+</body>
+</html>
