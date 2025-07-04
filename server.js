@@ -4,18 +4,22 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const { Server } = require("socket.io");
 
+// 🔌 Express and HTTP setup
 const app = express();
 const server = http.createServer(app);
 
 app.use(cors());
 
-// 🔌 Connect to MongoDB
-mongoose.connect("mongodb+srv://inspirationtech4:fIrPdWccXchyUPfC@cluster1234.usjdqo3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster1234", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// 🌐 MongoDB Connection
+mongoose.connect(
+  "mongodb+srv://inspirationtech4:fIrPdWccXchyUPfC@cluster1234.usjdqo3.mongodb.net/chatdb?retryWrites=true&w=majority&appName=Cluster1234",
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }
+);
 
-// 🧠 Define Schema
+// 🧠 Mongoose Schema
 const MessageSchema = new mongoose.Schema({
   text: String,
   sender: String,
@@ -24,10 +28,10 @@ const MessageSchema = new mongoose.Schema({
 
 const Message = mongoose.model("Message", MessageSchema);
 
-// 🎯 Handle Socket Connections
+// 🎯 Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "*", // Allow frontend
     methods: ["GET", "POST"],
   },
 });
@@ -35,30 +39,45 @@ const io = new Server(server, {
 io.on("connection", async (socket) => {
   console.log("✅ User connected:", socket.id);
 
-  const messages = await Message.find().sort({ timestamp: 1 }).limit(50);
-messages.forEach((msg) => {
-  socket.emit("receive_message", {
-    text: msg.text,
-    sender: msg.sender,
-  });
-});
+  // 🔄 Send last 50 messages to new user
+  try {
+    const messages = await Message.find().sort({ timestamp: 1 }).limit(50);
+    messages.forEach((msg) => {
+      socket.emit("receive_message", {
+        text: msg.text,
+        sender: msg.sender,
+        timestamp: msg.timestamp,
+      });
+    });
+  } catch (err) {
+    console.error("❌ Error fetching messages:", err);
+  }
 
-  // 🔽 2. Handle new messages from this user
+  // 📩 When new message received
   socket.on("send_message", async (data) => {
-    const newMsg = new Message({ text: data.text, sender: data.sender });
-    await newMsg.save();
-    console.log("✅ Message saved:", newMsg);
+    try {
+      const newMsg = new Message({
+        text: data.text,
+        sender: data.sender || "Anonymous",
+      });
+      await newMsg.save();
 
-    io.emit("receive_message", data); // Broadcast to everyone
+      io.emit("receive_message", {
+        text: newMsg.text,
+        sender: newMsg.sender,
+        timestamp: newMsg.timestamp,
+      });
+    } catch (err) {
+      console.error("❌ Error saving message:", err);
+    }
   });
 
-  // 🔽 3. Optional: handle disconnect
   socket.on("disconnect", () => {
     console.log("❌ Disconnected:", socket.id);
   });
 });
 
-// ✅ Start Server
+// 🚀 Start Server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
