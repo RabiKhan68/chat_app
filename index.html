@@ -9,6 +9,7 @@
 </head>
 
 <body>
+    <button id="darkToggle">Dark Mode</button>
     <h2>Room Chat</h2>
     <input id="usernameInput" placeholder="Enter your name...">
     <br><br>
@@ -47,19 +48,27 @@
 
         socket.on("receive_message", (data) => {
             const li = document.createElement("li");
-            li.textContent = `${data.sender}: ${data.text}`;
-            chatBox.appendChild(li);
+            const initials = data.sender?.charAt(0).toUpperCase() || "?";
 
-            // Add style based on who sent it
-            if (data.sender === myId) {
+            li.innerHTML = `
+        <div class="avatar">${initials}</div>
+        <div>
+            <strong>${data.sender}</strong><br>
+            ${data.text}
+            <div class="timestamp">${new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+    `;
+
+            if (data.sender === document.getElementById("usernameInput").value) {
                 li.classList.add("sender");
             } else {
                 li.classList.add("receiver");
             }
 
             chatBox.appendChild(li);
-            chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll
+            chatBox.scrollTop = chatBox.scrollHeight;
         });
+
     </script>
     <script>
         msgInput.addEventListener("keypress", function (e) {
@@ -68,6 +77,13 @@
             }
         });
     </script>
+    <script>
+        const toggleBtn = document.getElementById("darkToggle");
+        toggleBtn.onclick = () => {
+            document.body.classList.toggle("dark");
+        };
+    </script>
+
 
 </body>
 
