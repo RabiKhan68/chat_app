@@ -14,22 +14,48 @@
 
     <script src = "https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        const socket = io("https://pale-sordid-prepared.glitch.me");
+  const socket = io("https://pale-sordid-prepared.glitch.me");
 
-        const msgInput = document.getElementById("msgInput");
-        const chatBox = document.getElementById("chatBox");
+  const msgInput = document.getElementById("msgInput");
+  const chatBox = document.getElementById("chatBox");
 
-        function sendMessage() {
-            const message = msgInput.value;
-            socket.emit("send_message", {text: message});
-            msgInput.value = "";
-        }
+  // Store your ID to distinguish sender vs others
+  let myId = null;
 
-        socket.on("receive_message", (data) => {
-            const li = document.createElement("li");
-            li.textContent = data.text;
-            chatBox.appendChild(li);
-        });
-    </script>
+  socket.on("connect", () => {
+    myId = socket.id;
+    console.log("Connected as", myId);
+  });
+
+  function sendMessage() {
+    const message = msgInput.value;
+    socket.emit("send_message", { text: message, sender: myId });
+    msgInput.value = "";
+    msgInput.focus();
+  }
+
+  socket.on("receive_message", (data) => {
+    const li = document.createElement("li");
+    li.textContent = data.text;
+
+    // Add style based on who sent it
+    if (data.sender === myId) {
+      li.classList.add("sender");
+    } else {
+      li.classList.add("receiver");
+    }
+
+    chatBox.appendChild(li);
+    chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll
+  });
+</script>
+<script>
+  msgInput.addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+</script>
+
 </body>
 </html>
